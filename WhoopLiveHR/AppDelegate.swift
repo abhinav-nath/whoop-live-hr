@@ -2,7 +2,7 @@ import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
-    private let heartRateManager = HeartRateManager()
+    private let heartRateMonitor = WhoopHeartRateMonitor()
 
     private var statusBarController: StatusBarController?
 
@@ -16,13 +16,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.setActivationPolicy(.accessory)
 
         statusBarController = StatusBarController(
-            heartRateManager: heartRateManager
+            heartRateMonitor: heartRateMonitor
         )
     }
 
     func applicationWillTerminate(
         _ notification: Notification
     ) {
-        heartRateManager.shutdown()
+        heartRateMonitor.shutdown()
     }
 }

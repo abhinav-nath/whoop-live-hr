@@ -15,19 +15,17 @@ struct HeartRateSample: Identifiable {
 }
 
 
-// MARK: - HeartRateManager
+// MARK: - WhoopHeartRateMonitor
 
-final class HeartRateManager: NSObject, ObservableObject {
+final class WhoopHeartRateMonitor: NSObject, ObservableObject {
 
     // MARK: Published state
 
     @Published private(set) var heartRate: Int?
 
-    @Published private(set) var status: String =
-        "Starting Bluetooth..."
+    @Published private(set) var status: String = "Starting Bluetooth..."
 
-    @Published private(set) var deviceName: String =
-        "WHOOP"
+    @Published private(set) var deviceName: String = "WHOOP"
 
     @Published private(set) var rssi: Int?
 
@@ -35,11 +33,9 @@ final class HeartRateManager: NSObject, ObservableObject {
 
     @Published private(set) var isConnected = false
 
-    @Published private(set) var bluetoothState:
-        CBManagerState = .unknown
+    @Published private(set) var bluetoothState: CBManagerState = .unknown
 
-    @Published private(set) var history:
-        [HeartRateSample] = []
+    @Published private(set) var history: [HeartRateSample] = []
 
 
     // MARK: CoreBluetooth
@@ -60,29 +56,22 @@ final class HeartRateManager: NSObject, ObservableObject {
 
     // MARK: BLE UUIDs
 
-    private let heartRateService =
-        CBUUID(string: "180D")
+    private let heartRateService = CBUUID(string: "180D")
 
-    private let heartRateMeasurement =
-        CBUUID(string: "2A37")
+    private let heartRateMeasurement = CBUUID(string: "2A37")
 
 
     // MARK: Configuration
 
-    private let staleReadingTimeout:
-        TimeInterval = 10
+    private let staleReadingTimeout: TimeInterval = 10
 
-    private let scanFallbackDelay:
-        TimeInterval = 5
+    private let scanFallbackDelay: TimeInterval = 5
 
-    private let reconnectDelay:
-        TimeInterval = 2
+    private let reconnectDelay: TimeInterval = 2
 
-    private let historyDuration:
-        TimeInterval = 5 * 60
+    private let historyDuration: TimeInterval = 5 * 60
 
-    private let rssiRefreshInterval:
-        TimeInterval = 10
+    private let rssiRefreshInterval: TimeInterval = 10
 
 
     // MARK: Internal state
@@ -350,10 +339,7 @@ final class HeartRateManager: NSObject, ObservableObject {
             return
         }
 
-        let elapsed =
-            Date().timeIntervalSince(
-                lastUpdatedAt
-            )
+        let elapsed = Date().timeIntervalSince(lastUpdatedAt)
 
         guard elapsed > staleReadingTimeout else {
             return
@@ -370,8 +356,7 @@ final class HeartRateManager: NSObject, ObservableObject {
         heartRate = nil
 
         if isConnected {
-            status =
-                "Connected, waiting for heart rate..."
+            status = "Connected, waiting for heart rate..."
         }
     }
 
@@ -384,17 +369,14 @@ final class HeartRateManager: NSObject, ObservableObject {
 
         rssiTimer =
             Timer.scheduledTimer(
-                withTimeInterval:
-                    rssiRefreshInterval,
+                withTimeInterval: rssiRefreshInterval,
                 repeats: true
             ) { [weak self] _ in
 
                 guard
                     let self,
-                    let peripheral =
-                        self.whoopPeripheral,
-                    peripheral.state ==
-                        .connected
+                    let peripheral = self.whoopPeripheral,
+                    peripheral.state == .connected
                 else {
                     return
                 }
@@ -428,69 +410,24 @@ final class HeartRateManager: NSObject, ObservableObject {
         name: String
     ) -> Bool {
 
-        let normalized =
-            name.uppercased()
+        let normalized = name.uppercased()
 
         return
-            normalized.contains("WHOOP")
-            || normalized.hasPrefix("WHP")
+            normalized.contains("WHOOP") || normalized.hasPrefix("WHP")
     }
 
-
-    // MARK: HR packet parsing
-
-    private func parseHeartRate(
-        _ data: Data
-    ) -> Int? {
-
-        guard data.count >= 2 else {
-            return nil
-        }
-
-        let flags = data[0]
-
-        /*
-         Bluetooth Heart Rate Measurement:
-
-         bit 0 == 0 → UINT8
-         bit 0 == 1 → UINT16
-         */
-        let is16Bit =
-            (flags & 0x01) != 0
-
-        if is16Bit {
-
-            guard data.count >= 3 else {
-                return nil
-            }
-
-            let value =
-                UInt16(data[1])
-                |
-                (
-                    UInt16(data[2])
-                    << 8
-                )
-
-            return Int(value)
-        }
-
-        return Int(data[1])
-    }
 }
 
 
 // MARK: - CBCentralManagerDelegate
 
-extension HeartRateManager:
-    CBCentralManagerDelegate {
+extension WhoopHeartRateMonitor: CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(
         _ central: CBCentralManager
     ) {
 
-        bluetoothState =
-            central.state
+        bluetoothState = central.state
 
         switch central.state {
 
@@ -515,8 +452,7 @@ extension HeartRateManager:
 
             resetHeartRate()
 
-            status =
-                "Bluetooth is off"
+            status = "Bluetooth is off"
 
 
         case .unauthorized:
@@ -531,8 +467,7 @@ extension HeartRateManager:
 
             resetHeartRate()
 
-            status =
-                "Bluetooth permission denied"
+            status = "Bluetooth permission denied"
 
 
         case .unsupported:
@@ -543,8 +478,7 @@ extension HeartRateManager:
 
             resetHeartRate()
 
-            status =
-                "Bluetooth unsupported"
+            status = "Bluetooth unsupported"
 
 
         case .resetting:
@@ -555,20 +489,17 @@ extension HeartRateManager:
 
             resetHeartRate()
 
-            status =
-                "Bluetooth resetting..."
+            status = "Bluetooth resetting..."
 
 
         case .unknown:
 
-            status =
-                "Bluetooth state unknown"
+            status = "Bluetooth state unknown"
 
 
         @unknown default:
 
-            status =
-                "Unknown Bluetooth state"
+            status = "Unknown Bluetooth state"
         }
     }
 
@@ -576,18 +507,13 @@ extension HeartRateManager:
     func centralManager(
         _ central: CBCentralManager,
         didDiscover peripheral: CBPeripheral,
-        advertisementData:
-            [String: Any],
+        advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
 
-        let advertisedName =
-            advertisementData[
-                CBAdvertisementDataLocalNameKey
-            ] as? String
+        let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
 
-        let name =
-            advertisedName
+        let name = advertisedName
             ?? peripheral.name
             ?? "Unknown"
 
@@ -596,8 +522,7 @@ extension HeartRateManager:
          During the broad fallback scan there may
          be many devices, so don't spam the console.
          */
-        if !isUsingBroadScan
-            || isWhoopDevice(name: name) {
+        if !isUsingBroadScan || isWhoopDevice(name: name) {
 
             print(
                 "Discovered: \(name) | RSSI: \(RSSI)"
@@ -618,17 +543,13 @@ extension HeartRateManager:
 
         deviceName = name
 
-        rssi =
-            RSSI.intValue
+        rssi = RSSI.intValue
 
-        status =
-            "WHOOP found. Connecting..."
+        status = "WHOOP found. Connecting..."
 
-        whoopPeripheral =
-            peripheral
+        whoopPeripheral = peripheral
 
-        peripheral.delegate =
-            self
+        peripheral.delegate = self
 
         central.connect(
             peripheral,
@@ -648,11 +569,9 @@ extension HeartRateManager:
 
         isConnected = true
 
-        status =
-            "Connected to WHOOP"
+        status = "Connected to WHOOP"
 
-        peripheral.delegate =
-            self
+        peripheral.delegate = self
 
         peripheral.discoverServices(
             [
@@ -668,8 +587,7 @@ extension HeartRateManager:
 
     func centralManager(
         _ central: CBCentralManager,
-        didFailToConnect peripheral:
-            CBPeripheral,
+        didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
 
@@ -677,8 +595,7 @@ extension HeartRateManager:
             "Failed to connect: "
             +
             (
-                error?.localizedDescription
-                ?? "unknown error"
+                error?.localizedDescription ?? "unknown error"
             )
         )
 
@@ -694,8 +611,7 @@ extension HeartRateManager:
 
     func centralManager(
         _ central: CBCentralManager,
-        didDisconnectPeripheral peripheral:
-            CBPeripheral,
+        didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
 
@@ -706,9 +622,7 @@ extension HeartRateManager:
         if let error {
 
             print(
-                "Disconnect reason: "
-                +
-                error.localizedDescription
+                "Disconnect reason: " + error.localizedDescription
             )
         }
 
@@ -729,8 +643,7 @@ extension HeartRateManager:
 
 // MARK: - CBPeripheralDelegate
 
-extension HeartRateManager:
-    CBPeripheralDelegate {
+extension WhoopHeartRateMonitor: CBPeripheralDelegate {
 
     func peripheral(
         _ peripheral: CBPeripheral,
@@ -740,21 +653,17 @@ extension HeartRateManager:
         if let error {
 
             print(
-                "Service discovery failed: "
-                +
-                error.localizedDescription
+                "Service discovery failed: " + error.localizedDescription
             )
 
-            status =
-                "Failed to discover services"
+            status = "Failed to discover services"
 
             return
         }
 
 
         guard
-            let services =
-                peripheral.services
+            let services = peripheral.services
         else {
             return
         }
@@ -764,8 +673,7 @@ extension HeartRateManager:
             let heartService =
                 services.first(
                     where: {
-                        $0.uuid ==
-                            heartRateService
+                        $0.uuid == heartRateService
                     }
                 )
         else {
@@ -774,8 +682,7 @@ extension HeartRateManager:
                 "Heart Rate service not found"
             )
 
-            status =
-                "Heart Rate service unavailable"
+            status = "Heart Rate service unavailable"
 
             return
         }
@@ -785,10 +692,7 @@ extension HeartRateManager:
             "Found Heart Rate service"
         )
 
-        peripheral.discoverCharacteristics(
-            [
-                heartRateMeasurement
-            ],
+        peripheral.discoverCharacteristics([heartRateMeasurement],
             for: heartService
         )
     }
@@ -796,29 +700,24 @@ extension HeartRateManager:
 
     func peripheral(
         _ peripheral: CBPeripheral,
-        didDiscoverCharacteristicsFor service:
-            CBService,
+        didDiscoverCharacteristicsFor service: CBService,
         error: Error?
     ) {
 
         if let error {
 
             print(
-                "Characteristic discovery failed: "
-                +
-                error.localizedDescription
+                "Characteristic discovery failed: " + error.localizedDescription
             )
 
-            status =
-                "Failed to discover heart-rate characteristic"
+            status = "Failed to discover heart-rate characteristic"
 
             return
         }
 
 
         guard
-            let characteristics =
-                service.characteristics
+            let characteristics = service.characteristics
         else {
             return
         }
@@ -834,8 +733,7 @@ extension HeartRateManager:
                 )
         else {
 
-            status =
-                "Heart Rate characteristic unavailable"
+            status = "Heart Rate characteristic unavailable"
 
             return
         }
@@ -845,8 +743,7 @@ extension HeartRateManager:
             "Found Heart Rate Measurement"
         )
 
-        status =
-            "Waiting for heart rate..."
+        status = "Waiting for heart rate..."
 
         peripheral.setNotifyValue(
             true,
@@ -857,56 +754,45 @@ extension HeartRateManager:
 
     func peripheral(
         _ peripheral: CBPeripheral,
-        didUpdateNotificationStateFor
-            characteristic:
-                CBCharacteristic,
+        didUpdateNotificationStateFor characteristic: CBCharacteristic,
         error: Error?
     ) {
 
         if let error {
 
             print(
-                "Failed to enable HR notifications: "
-                +
-                error.localizedDescription
+                "Failed to enable HR notifications: " + error.localizedDescription
             )
 
-            status =
-                "Failed to subscribe to heart rate"
+            status = "Failed to subscribe to heart rate"
 
             return
         }
 
 
         guard
-            characteristic.uuid ==
-                heartRateMeasurement
+            characteristic.uuid == heartRateMeasurement
         else {
             return
         }
 
 
         print(
-            "Heart-rate notifications enabled: "
-            +
-            "\(characteristic.isNotifying)"
+            "Heart-rate notifications enabled: " + "\(characteristic.isNotifying)"
         )
     }
 
 
     func peripheral(
         _ peripheral: CBPeripheral,
-        didUpdateValueFor characteristic:
-            CBCharacteristic,
+        didUpdateValueFor characteristic: CBCharacteristic,
         error: Error?
     ) {
 
         if let error {
 
             print(
-                "Heart-rate update failed: "
-                +
-                error.localizedDescription
+                "Heart-rate update failed: " + error.localizedDescription
             )
 
             return
@@ -914,24 +800,21 @@ extension HeartRateManager:
 
 
         guard
-            characteristic.uuid ==
-                heartRateMeasurement
+            characteristic.uuid == heartRateMeasurement
         else {
             return
         }
 
 
         guard
-            let data =
-                characteristic.value
+            let data = characteristic.value
         else {
             return
         }
 
 
         guard
-            let bpm =
-                parseHeartRate(data)
+            let bpm = HeartRatePacketParser.parse(data)
         else {
 
             print(
@@ -955,15 +838,12 @@ extension HeartRateManager:
         if let error {
 
             print(
-                "Failed to read RSSI: "
-                +
-                error.localizedDescription
+                "Failed to read RSSI: " + error.localizedDescription
             )
 
             return
         }
 
-        rssi =
-            RSSI.intValue
+        rssi = RSSI.intValue
     }
 }

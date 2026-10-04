@@ -2,31 +2,26 @@ import AppKit
 import SwiftUI
 import Combine
 
-final class StatusBarController:
-    NSObject {
+final class StatusBarController: NSObject {
 
     // MARK: Status item
 
-    private let statusItem:
-        NSStatusItem
+    private let statusItem: NSStatusItem
 
 
     // MARK: Popover
 
-    private let popover =
-        NSPopover()
+    private let popover = NSPopover()
 
 
     // MARK: Dependencies
 
-    private let heartRateManager:
-        HeartRateManager
+    private let heartRateMonitor: WhoopHeartRateMonitor
 
 
     // MARK: Combine
 
-    private var cancellables =
-        Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
 
 
     // MARK: Layout
@@ -41,24 +36,20 @@ final class StatusBarController:
      grow/shrink as BPM moves between
      two and three digits.
      */
-    private let statusItemWidth:
-        CGFloat = 58
+    private let statusItemWidth: CGFloat = 58
 
 
     // MARK: Init
 
     init(
-        heartRateManager:
-            HeartRateManager
+        heartRateMonitor: WhoopHeartRateMonitor
     ) {
 
-        self.heartRateManager =
-            heartRateManager
+        self.heartRateMonitor = heartRateMonitor
 
         self.statusItem =
             NSStatusBar.system.statusItem(
-                withLength:
-                    statusItemWidth
+                withLength: statusItemWidth
             )
 
         super.init()
@@ -67,7 +58,7 @@ final class StatusBarController:
 
         configurePopover()
 
-        observeHeartRateManager()
+        observeHeartRateMonitor()
     }
 
 
@@ -76,8 +67,7 @@ final class StatusBarController:
     private func configureStatusItem() {
 
         guard
-            let button =
-                statusItem.button
+            let button = statusItem.button
         else {
             return
         }
@@ -85,10 +75,8 @@ final class StatusBarController:
 
         let heart =
             NSImage(
-                systemSymbolName:
-                    "heart.fill",
-                accessibilityDescription:
-                    "Heart Rate"
+                systemSymbolName: "heart.fill",
+                accessibilityDescription: "Heart Rate"
             )
 
 
@@ -99,14 +87,11 @@ final class StatusBarController:
         heart?.isTemplate = true
 
 
-        button.image =
-            heart
+        button.image = heart
 
-        button.imagePosition =
-            .imageLeft
+        button.imagePosition = .imageLeft
 
-        button.imageScaling =
-            .scaleProportionallyDown
+        button.imageScaling = .scaleProportionallyDown
 
 
         /*
@@ -121,17 +106,12 @@ final class StatusBarController:
             )
 
 
-        button.alignment =
-            .center
+        button.alignment = .center
 
 
-        button.target =
-            self
+        button.target = self
 
-        button.action =
-            #selector(
-                togglePopover
-            )
+        button.action = #selector(togglePopover)
 
 
         updateStatusItem()
@@ -145,15 +125,13 @@ final class StatusBarController:
     private func updateStatusItem() {
 
         guard
-            let button =
-                statusItem.button
+            let button = statusItem.button
         else {
             return
         }
 
 
-        if let bpm =
-            heartRateManager.heartRate {
+        if let bpm = heartRateMonitor.heartRate {
 
             /*
              Always exactly three character slots:
@@ -164,17 +142,11 @@ final class StatusBarController:
              100 -> "100"
              101 -> "101"
              */
-            button.title =
-                String(
-                    format:
-                        "%3d",
-                    bpm
-                )
+            button.title = String(format: "%3d", bpm)
 
         } else {
 
-            button.title =
-                " --"
+            button.title = " --"
         }
     }
 
@@ -182,23 +154,19 @@ final class StatusBarController:
     private func updateToolTip() {
 
         guard
-            let button =
-                statusItem.button
+            let button = statusItem.button
         else {
             return
         }
 
 
-        if let bpm =
-            heartRateManager.heartRate {
+        if let bpm = heartRateMonitor.heartRate {
 
-            button.toolTip =
-                "\(bpm) BPM • \(heartRateManager.status)"
+            button.toolTip = "\(bpm) BPM • \(heartRateMonitor.status)"
 
         } else {
 
-            button.toolTip =
-                heartRateManager.status
+            button.toolTip = heartRateMonitor.status
         }
     }
 
@@ -207,11 +175,9 @@ final class StatusBarController:
 
     private func configurePopover() {
 
-        popover.behavior =
-            .transient
+        popover.behavior = .transient
 
-        popover.animates =
-            true
+        popover.animates = true
 
         popover.contentSize =
             NSSize(
@@ -224,8 +190,8 @@ final class StatusBarController:
             NSHostingController(
                 rootView:
                     StatusPopoverView(
-                        heartRateManager:
-                            heartRateManager
+                        heartRateMonitor:
+                            heartRateMonitor
                     )
             )
     }
@@ -235,8 +201,7 @@ final class StatusBarController:
     private func togglePopover() {
 
         guard
-            let button =
-                statusItem.button
+            let button = statusItem.button
         else {
             return
         }
@@ -251,19 +216,17 @@ final class StatusBarController:
 
 
         popover.show(
-            relativeTo:
-                button.bounds,
+            relativeTo: button.bounds,
             of:
                 button,
-            preferredEdge:
-                .minY
+            preferredEdge: .minY
         )
     }
 
 
     // MARK: Observation
 
-    private func observeHeartRateManager() {
+    private func observeHeartRateMonitor() {
 
         /*
          Heart-rate changes update the status
@@ -271,7 +234,7 @@ final class StatusBarController:
 
          No polling Timer required.
          */
-        heartRateManager
+        heartRateMonitor
             .$heartRate
             .removeDuplicates()
             .receive(
@@ -289,7 +252,7 @@ final class StatusBarController:
             )
 
 
-        heartRateManager
+        heartRateMonitor
             .$status
             .removeDuplicates()
             .receive(

@@ -9,8 +9,7 @@ struct StatusPopoverView:
     View {
 
     @ObservedObject
-    var heartRateManager:
-        HeartRateManager
+    var heartRateMonitor: WhoopHeartRateMonitor
 
 
     var body: some View {
@@ -37,22 +36,17 @@ struct StatusPopoverView:
             footer
         }
         .padding(16)
-        .frame(
-            width: 340
-        )
+        .frame(width: 340)
     }
 
 
     // MARK: Header
 
-    private var header:
-        some View {
+    private var header: some View {
 
         HStack {
 
-            Text(
-                "WHOOP Live HR"
-            )
+            Text("WHOOP Live HR")
             .font(.headline)
 
 
@@ -61,7 +55,7 @@ struct StatusPopoverView:
 
             Circle()
                 .fill(
-                    heartRateManager.isConnected
+                    heartRateMonitor.isConnected
                         ? Color.green
                         : Color.orange
                 )
@@ -72,40 +66,31 @@ struct StatusPopoverView:
 
 
             Text(
-                heartRateManager.isConnected
+                heartRateMonitor.isConnected
                     ? "Connected"
                     : "Disconnected"
             )
             .font(.caption)
-            .foregroundStyle(
-                .secondary
-            )
+            .foregroundStyle(.secondary)
         }
     }
 
 
     // MARK: Heart Rate
 
-    private var heartRateSection:
-        some View {
+    private var heartRateSection: some View {
 
         HStack(
-            alignment:
-                .firstTextBaseline,
+            alignment: .firstTextBaseline,
             spacing: 7
         ) {
 
-            Image(
-                systemName:
-                    "heart.fill"
-            )
-            .font(
-                .system(size: 22)
-            )
+            Image(systemName: "heart.fill")
+            .font(.system(size: 22))
 
 
             Text(
-                heartRateManager
+                heartRateMonitor
                     .heartRate
                     .map(String.init)
                     ?? "--"
@@ -135,10 +120,9 @@ struct StatusPopoverView:
     // MARK: Chart
 
     @ViewBuilder
-    private var chartSection:
-        some View {
+    private var chartSection: some View {
 
-        if heartRateManager
+        if heartRateMonitor
             .history
             .count >= 2 {
 
@@ -149,54 +133,37 @@ struct StatusPopoverView:
 
                 HStack {
 
-                    Text(
-                        "Last 5 minutes"
-                    )
+                    Text("Last 5 minutes")
                     .font(.caption)
-                    .foregroundStyle(
-                        .secondary
-                    )
+                    .foregroundStyle(.secondary)
 
 
                     Spacer()
 
 
-                    if let stats =
-                        statistics {
+                    if let stats = statistics {
 
                         Text(
                             "Min \(stats.min)   Avg \(stats.avg)   Max \(stats.max)"
                         )
                         .font(.caption2)
                         .monospacedDigit()
-                        .foregroundStyle(
-                            .secondary
-                        )
+                        .foregroundStyle(.secondary)
                     }
                 }
 
 
                 Chart(
-                    heartRateManager.history
+                    heartRateMonitor.history
                 ) { sample in
 
                     LineMark(
-                        x: .value(
-                            "Time",
-                            sample.timestamp
-                        ),
-                        y: .value(
-                            "Heart Rate",
-                            sample.bpm
-                        )
+                        x: .value("Time", sample.timestamp),
+                        y: .value("Heart Rate", sample.bpm)
                     )
-                    .interpolationMethod(
-                        .catmullRom
-                    )
+                    .interpolationMethod(.catmullRom)
                 }
-                .chartXAxis(
-                    .hidden
-                )
+                .chartXAxis(.hidden)
                 .chartYAxis {
 
                     AxisMarks(
@@ -220,37 +187,27 @@ struct StatusPopoverView:
                 spacing: 8
             ) {
 
-                ProgressView()
-                    .controlSize(
-                        .small
-                    )
+                ProgressView().controlSize(.small)
 
 
                 Text(
-                    heartRateManager
+                    heartRateMonitor
                         .isConnected
                         ? "Collecting heart-rate data..."
-                        : heartRateManager.status
+                        : heartRateMonitor.status
                 )
                 .font(.caption)
-                .foregroundStyle(
-                    .secondary
-                )
+                .foregroundStyle(.secondary)
             }
-            .frame(
-                maxWidth: .infinity
-            )
-            .frame(
-                height: 130
-            )
+            .frame(maxWidth: .infinity)
+            .frame(height: 130)
         }
     }
 
 
     // MARK: Device
 
-    private var deviceSection:
-        some View {
+    private var deviceSection: some View {
 
         VStack(
             alignment: .leading,
@@ -259,52 +216,34 @@ struct StatusPopoverView:
 
             HStack {
 
-                Text(
-                    heartRateManager
-                        .deviceName
-                )
+                Text(heartRateMonitor.deviceName)
                 .font(.callout)
 
 
                 Spacer()
 
 
-                if let rssi =
-                    heartRateManager.rssi {
+                if let rssi = heartRateMonitor.rssi {
 
-                    Text(
-                        signalDescription(
-                            rssi
-                        )
-                    )
+                    Text(signalDescription(rssi))
                     .font(.caption)
-                    .foregroundStyle(
-                        .secondary
-                    )
+                    .foregroundStyle(.secondary)
                 }
             }
 
 
-            Text(
-                heartRateManager.status
-            )
+            Text(heartRateMonitor.status)
             .font(.caption)
-            .foregroundStyle(
-                .secondary
-            )
+            .foregroundStyle(.secondary)
 
 
-            if let lastUpdatedAt =
-                heartRateManager
-                    .lastUpdatedAt {
+            if let lastUpdatedAt = heartRateMonitor.lastUpdatedAt {
 
                 Text(
                     "Last reading \(lastUpdatedAt.formatted(date: .omitted, time: .standard))"
                 )
                 .font(.caption2)
-                .foregroundStyle(
-                    .tertiary
-                )
+                .foregroundStyle(.tertiary)
             }
         }
     }
@@ -312,8 +251,7 @@ struct StatusPopoverView:
 
     // MARK: Footer
 
-    private var footer:
-        some View {
+    private var footer: some View {
 
         HStack {
 
@@ -324,8 +262,7 @@ struct StatusPopoverView:
                 "Quit"
             ) {
 
-                NSApplication.shared
-                    .terminate(nil)
+                NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
         }
@@ -341,38 +278,21 @@ struct StatusPopoverView:
             max: Int
         )? {
 
-        let values =
-            heartRateManager
+        let values = heartRateMonitor
                 .history
                 .map(\.bpm)
 
 
         guard
-            let minimum =
-                values.min(),
-            let maximum =
-                values.max(),
-            !values.isEmpty
+            let minimum = values.min(),
+            let maximum = values.max(), !values.isEmpty
         else {
             return nil
         }
 
 
         let average =
-            Int(
-                round(
-                    Double(
-                        values.reduce(
-                            0,
-                            +
-                        )
-                    )
-                    /
-                    Double(
-                        values.count
-                    )
-                )
-            )
+            Int(round(Double(values.reduce(0, +)) / Double(values.count)))
 
 
         return (
@@ -385,37 +305,25 @@ struct StatusPopoverView:
 
     // MARK: Chart scale
 
-    private var chartYDomain:
-        ClosedRange<Int> {
+    private var chartYDomain: ClosedRange<Int> {
 
-        let values =
-            heartRateManager
+        let values = heartRateMonitor
                 .history
                 .map(\.bpm)
 
 
         guard
-            let minimum =
-                values.min(),
-            let maximum =
-                values.max()
+            let minimum = values.min(),
+            let maximum = values.max()
         else {
             return 50...120
         }
 
 
-        let lower =
-            max(
-                30,
-                minimum - 10
-            )
+        let lower = max(30, minimum - 10)
 
 
-        let upper =
-            max(
-                lower + 20,
-                maximum + 10
-            )
+        let upper = max(lower + 20, maximum + 10)
 
 
         return lower...upper
@@ -431,20 +339,16 @@ struct StatusPopoverView:
         switch rssi {
 
         case -59...0:
-            return
-                "\(rssi) dBm • Excellent"
+            return "\(rssi) dBm • Excellent"
 
         case -69 ... -60:
-            return
-                "\(rssi) dBm • Good"
+            return "\(rssi) dBm • Good"
 
         case -79 ... -70:
-            return
-                "\(rssi) dBm • Fair"
+            return "\(rssi) dBm • Fair"
 
         default:
-            return
-                "\(rssi) dBm • Weak"
+            return "\(rssi) dBm • Weak"
         }
     }
 }
