@@ -4,6 +4,8 @@
 
 A small native macOS app that puts live heart-rate readings from your WHOOP in the menu bar. Click the heart to see recent readings, a chart, and connection details.
 
+<img width="358" height="464" alt="image" src="https://github.com/user-attachments/assets/55b3b3ca-dd75-4c6b-ab4f-cc9aff0444be" />
+
 Built with Swift, SwiftUI, AppKit, CoreBluetooth, and Swift Charts. No third-party dependencies or WHOOP API credentials required.
 
 ## Features
